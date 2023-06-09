@@ -96,22 +96,24 @@ public class WorldRendererMixin {
             }
         }*/
         //System.out.println(randcheck.nextGaussian() / 100F);
-        angleX += (randcheck.nextGaussian() / 10F);
-        angleZ += (randcheck.nextGaussian() / 10F);
-        //angleX = 0;
-        //angleZ = 0;
+        angleX = (float) MathHelper.clamp(angleX + (randcheck.nextGaussian() / 10F), -35F, 35F);
+        angleZ = (float) MathHelper.clamp(angleX + (randcheck.nextGaussian() / 10F), -35F, 35F);
 
-        if (Math.random() > 0.5) {
+
+        //if (Math.random() > 0.5) {
             matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(angleX));
-        } else {
             matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(angleZ));
-        }
+        //}
         //matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(angle));
         //matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(angle));
 
         //MatrixStack matrixStack = RenderSystem.getModelViewStack();
         float rainGradient = this.client.world.getRainGradient(tickDelta);
         //System.out.println(rainGradient);
+        if (rainGradient == 0.0F) {
+            angleX = MathHelper.clamp(angleX, -15F, 15F);
+            angleZ = MathHelper.clamp(angleX, -15F, 15F);
+        }
         if (!(rainGradient <= 0.0F)) {
             manager.enable();
             World world = this.client.world;
@@ -137,7 +139,7 @@ public class WorldRendererMixin {
             RenderSystem.setShader(GameRenderer::getParticleProgram);
             BlockPos.Mutable mutable = new BlockPos.Mutable();
 
-            layers = 6 + (int)(rainGradient * 4);
+            //layers = 6 + (int)(rainGradient * 4);
 
             for(int offsetPosZ = playerPosZ - layers; offsetPosZ <= playerPosZ + layers; ++offsetPosZ) { // loop over the Z positions before and after the player
                 for(int offsetPosX = playerPosX - layers; offsetPosX <= playerPosX + layers; ++offsetPosX) { // loop over the X positions before and after the player
