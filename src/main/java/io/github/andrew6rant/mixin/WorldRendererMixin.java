@@ -49,6 +49,12 @@ public class WorldRendererMixin {
 
     private static final Identifier HEAVY_RAIN = new Identifier("variable-weather:textures/environment/heavy_rain.png");
 
+    private static final Identifier LIGHT_SNOW = new Identifier("variable-weather:textures/environment/light_snow.png");
+
+    private static final Identifier MEDIUM_SNOW = new Identifier("variable-weather:textures/environment/medium_snow.png");
+
+    private static final Identifier HEAVY_SNOW = new Identifier("variable-weather:textures/environment/heavy_snow.png");
+
     private static final Identifier DEBUG = new Identifier("variable-weather:textures/environment/rain_debug.png");
 
     private float angleX = 0;
@@ -67,8 +73,8 @@ public class WorldRendererMixin {
      */
     @Overwrite
     public void renderWeather(LightmapTextureManager manager, float tickDelta, double cameraX, double cameraY, double cameraZ) {
-        MatrixStack matrixStack = new MatrixStack();
-        Matrix4f positionMatrix = matrixStack.peek().getPositionMatrix();
+
+
 
         /*
         float test = (System.currentTimeMillis() % 4000) / 4000f * 70f;
@@ -96,13 +102,11 @@ public class WorldRendererMixin {
             }
         }*/
         //System.out.println(randcheck.nextGaussian() / 100F);
-        angleX = (float) MathHelper.clamp(angleX + (randcheck.nextGaussian() / 10F), -35F, 35F);
-        angleZ = (float) MathHelper.clamp(angleX + (randcheck.nextGaussian() / 10F), -35F, 35F);
+
 
 
         //if (Math.random() > 0.5) {
-            matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(angleX));
-            matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(angleZ));
+
         //}
         //matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(angle));
         //matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(angle));
@@ -117,6 +121,22 @@ public class WorldRendererMixin {
         if (!(rainGradient <= 0.0F)) {
             manager.enable();
             World world = this.client.world;
+            boolean thundering = world.isThundering();
+            MatrixStack matrixStack = new MatrixStack();
+            Matrix4f positionMatrix = matrixStack.peek().getPositionMatrix();
+
+            if (thundering) {
+                angleX = (float) MathHelper.clamp(angleX + (randcheck.nextGaussian() / 3F), -35F, 35F);
+                angleZ = (float) MathHelper.clamp(angleX + (randcheck.nextGaussian() / 3F), -35F, 35F);
+            } else {
+                angleX = (float) MathHelper.clamp(angleX + (randcheck.nextGaussian() / 10F), -20F, 20F);
+                angleZ = (float) MathHelper.clamp(angleX + (randcheck.nextGaussian() / 10F), -20F, 20F);
+            }
+
+
+            matrixStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(angleX));
+            matrixStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(angleZ));
+
             int playerPosX = MathHelper.floor(cameraX);
             int playerPosY = MathHelper.floor(cameraY);
             int playerPosZ = MathHelper.floor(cameraZ);
@@ -130,7 +150,7 @@ public class WorldRendererMixin {
                 layers = 10;
             }
 
-            float timer = (System.currentTimeMillis() % 10000) / 10000f * 40f;
+            //float timer = (System.currentTimeMillis() % 10000) / 10000f * 40f;
 
 
             RenderSystem.depthMask(MinecraftClient.isFabulousGraphicsOrBetter());
@@ -140,6 +160,7 @@ public class WorldRendererMixin {
             BlockPos.Mutable mutable = new BlockPos.Mutable();
 
             //layers = 6 + (int)(rainGradient * 4);
+            //layers = 10;
 
             for(int offsetPosZ = playerPosZ - layers; offsetPosZ <= playerPosZ + layers; ++offsetPosZ) { // loop over the Z positions before and after the player
                 for(int offsetPosX = playerPosX - layers; offsetPosX <= playerPosX + layers; ++offsetPosX) { // loop over the X positions before and after the player
@@ -182,6 +203,8 @@ public class WorldRendererMixin {
                                     }
 
                                     m = 0;
+
+                                    //System.out.println(world.isThundering());
 
 
                                     //System.out.println(timer);
@@ -263,13 +286,71 @@ public class WorldRendererMixin {
                                     }
 
                                     m = 1;
-                                    RenderSystem.setShaderTexture(0, SNOW);
+
+                                    if (rainGradient <= 0.25) {
+                                        //System.out.println("light" + rainGradient);
+                                        RenderSystem.setShaderTexture(0, LIGHT_SNOW);
+                                    } else if (rainGradient >= 0.25 && rainGradient <= 0.5) {
+                                        //System.out.println("med" + rainGradient);
+                                        RenderSystem.setShaderTexture(0, MEDIUM_SNOW);
+                                    } else if (rainGradient >= 0.5 && rainGradient <= 0.75) {
+                                        //System.out.println("reg" + rainGradient);
+                                        RenderSystem.setShaderTexture(0, SNOW);
+                                    } else {
+                                        //System.out.println("heavy" + rainGradient);
+                                        RenderSystem.setShaderTexture(0, HEAVY_SNOW);
+                                    }
+
+                                    //RenderSystem.setShaderTexture(0, LIGHT_SNOW);
                                     bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR_LIGHT);
                                 }
 
                                 float aa = -((float)(this.ticks & 511) + tickDelta) / 512.0F;
-                                h = (float)(random.nextDouble() + (double)g * 0.01 * (double)((float)random.nextGaussian()));
-                                float ab = (float)(random.nextDouble() + (double)(g * (float)random.nextGaussian()) * 0.001);
+                                h = (float)(random.nextDouble() + (double)g * (0.08) * (double)((float)random.nextGaussian())); // this was 0.01 // horizontal motion
+                                float ab = (float)(random.nextDouble() + (double)(g * (float)random.nextGaussian()) * 0.009);// this was 0.001 // vertical motion
+                                double ac = (double)offsetPosX + 0.5 - cameraX;
+                                double ad = (double)offsetPosZ + 0.5 - cameraZ;
+                                opacity = (float)Math.sqrt(ac * ac + ad * ad) / (float)layers;
+                                float ae = ((1.0F - opacity * opacity) * 0.3F + 0.5F) * rainGradient;
+                                mutable.set(offsetPosX, topY, offsetPosZ);
+                                int af = WorldRenderer.getLightmapCoordinates(world, mutable);
+                                int ag = af >> 16 & '\uffff';
+                                int ah = af & '\uffff';
+                                int ai = (ag * 3 + 240) / 4;
+                                int aj = (ah * 3 + 240) / 4;
+                                bufferBuilder.vertex((double)offsetPosX - cameraX - d + 0.5, (double)s - cameraY, (double)offsetPosZ - cameraZ - e + 0.5).texture(0.0F + h, (float)r * 0.25F + aa + ab).color(1.0F, 1.0F, 1.0F, ae).light(aj, ai).next();
+                                bufferBuilder.vertex((double)offsetPosX - cameraX + d + 0.5, (double)s - cameraY, (double)offsetPosZ - cameraZ + e + 0.5).texture(1.0F + h, (float)r * 0.25F + aa + ab).color(1.0F, 1.0F, 1.0F, ae).light(aj, ai).next();
+                                bufferBuilder.vertex((double)offsetPosX - cameraX + d + 0.5, (double)r - cameraY, (double)offsetPosZ - cameraZ + e + 0.5).texture(1.0F + h, (float)s * 0.25F + aa + ab).color(1.0F, 1.0F, 1.0F, ae).light(aj, ai).next();
+                                bufferBuilder.vertex((double)offsetPosX - cameraX - d + 0.5, (double)r - cameraY, (double)offsetPosZ - cameraZ - e + 0.5).texture(0.0F + h, (float)s * 0.25F + aa + ab).color(1.0F, 1.0F, 1.0F, ae).light(aj, ai).next();
+                            } else {
+                                if (m != 1) {
+                                    if (m >= 0) {
+                                        tessellator.draw();
+                                    }
+
+                                    m = 1;
+
+                                    if (rainGradient <= 0.25) {
+                                        //System.out.println("light" + rainGradient);
+                                        RenderSystem.setShaderTexture(0, LIGHT_SNOW);
+                                    } else if (rainGradient >= 0.25 && rainGradient <= 0.5) {
+                                        //System.out.println("med" + rainGradient);
+                                        RenderSystem.setShaderTexture(0, MEDIUM_SNOW);
+                                    } else if (rainGradient >= 0.5 && rainGradient <= 0.75) {
+                                        //System.out.println("reg" + rainGradient);
+                                        RenderSystem.setShaderTexture(0, SNOW);
+                                    } else {
+                                        //System.out.println("heavy" + rainGradient);
+                                        RenderSystem.setShaderTexture(0, HEAVY_SNOW);
+                                    }
+
+                                    //RenderSystem.setShaderTexture(0, LIGHT_SNOW);
+                                    bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR_LIGHT);
+                                }
+
+                                float aa = -((float)(this.ticks & 511) + tickDelta) / 512.0F;
+                                h = (float)(random.nextDouble() + (double)g * (0.08) * (double)((float)random.nextGaussian())); // this was 0.01 // horizontal motion
+                                float ab = (float)(random.nextDouble() + (double)(g * (float)random.nextGaussian()) * 0.009);// this was 0.001 // vertical motion
                                 double ac = (double)offsetPosX + 0.5 - cameraX;
                                 double ad = (double)offsetPosZ + 0.5 - cameraZ;
                                 opacity = (float)Math.sqrt(ac * ac + ad * ad) / (float)layers;
