@@ -17,6 +17,9 @@
 	"entrypoints": {
 		"main": [
 			"io.github.andrew6rant.VariableWeather"
+		],
+		"client": [
+			"io.github.andrew6rant.VariableWeatherClient"
 		]
 	},
 	"mixins": [
