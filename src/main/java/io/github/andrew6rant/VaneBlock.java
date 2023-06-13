@@ -16,7 +16,7 @@ import org.jetbrains.annotations.Nullable;
 import static io.github.andrew6rant.VariableWeather.VANE_BLOCK_ENTITY;
 
 public class VaneBlock extends BlockWithEntity {
-    private static final VoxelShape SHAPE = Block.createCuboidShape(4.0, 8.0, 4.0, 12.0, 16.0, 12.0);
+    private static final VoxelShape SHAPE = Block.createCuboidShape(4.0, 0.0, 4.0, 12.0, 17.0, 12.0);
     public VaneBlock(Settings settings) {
         super(settings);
     }
