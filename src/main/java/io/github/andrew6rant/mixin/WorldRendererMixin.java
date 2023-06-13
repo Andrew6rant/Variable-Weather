@@ -1,6 +1,8 @@
 package io.github.andrew6rant.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.github.andrew6rant.VariableWeatherClient;
+import io.github.andrew6rant.weather.WeatherManager;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.CampfireBlock;
@@ -8,6 +10,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.ParticlesMode;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
@@ -15,10 +18,7 @@ import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
+import net.minecraft.util.math.*;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.Heightmap;
@@ -27,6 +27,9 @@ import net.minecraft.world.WorldView;
 import net.minecraft.world.biome.Biome;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(WorldRenderer.class)
 public class WorldRendererMixin {
@@ -43,6 +46,8 @@ public class WorldRendererMixin {
 
     @Final @Shadow @Mutable private static final Identifier RAIN = new Identifier("textures/environment/rain.png");
     @Final @Shadow @Mutable private static final Identifier SNOW = new Identifier("textures/environment/snow.png");
+
+    @Shadow private ClientWorld world;
 
     private static final Identifier LIGHT_RAIN = new Identifier("variable-weather:textures/environment/light_rain.png");
     private static final Identifier MEDIUM_RAIN = new Identifier("variable-weather:textures/environment/medium_light_rain.png");
@@ -70,6 +75,59 @@ public class WorldRendererMixin {
         field_20794 = field20794;
         field_20795 = field20795;
     }
+
+    @Inject(method = "Lnet/minecraft/client/render/WorldRenderer;render(Lnet/minecraft/client/util/math/MatrixStack;FJZLnet/minecraft/client/render/Camera;Lnet/minecraft/client/render/GameRenderer;Lnet/minecraft/client/render/LightmapTextureManager;Lorg/joml/Matrix4f;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/WorldRenderer;renderLayer(Lnet/minecraft/client/render/RenderLayer;Lnet/minecraft/client/util/math/MatrixStack;DDDLorg/joml/Matrix4f;)V", ordinal = 2, shift = At.Shift.AFTER))
+    private void render(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f positionMatrix, CallbackInfo ci) {
+        int size = 10;
+        if (VariableWeatherClient.renderWindVisualization()) {
+            for (int x = -size; x < size; x++) {
+                for (int z = -size; z < size; z++) {
+                    Vec2f wind = WeatherManager.getWindPolar(world, new Vec3d(x + Math.floor(client.gameRenderer.getCamera().getPos().getX()), client.gameRenderer.getCamera().getPos().getY(), z + Math.floor(client.gameRenderer.getCamera().getPos().getZ())), 1.0F);
+
+                    RenderSystem.enableBlend();
+                    RenderSystem.defaultBlendFunc();
+                    RenderSystem.depthMask(false);
+                    RenderSystem.enableDepthTest();
+                    RenderSystem.polygonOffset(-3.0F, -3.0F);
+                    RenderSystem.enablePolygonOffset();
+                    RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+                    Tessellator tessellator = Tessellator.getInstance();
+                    BufferBuilder bufferBuilder = tessellator.getBuffer();
+
+                    matrices.push();
+
+                    matrices.translate(-client.gameRenderer.getCamera().getPos().getX(), -client.gameRenderer.getCamera().getPos().getY(), -client.gameRenderer.getCamera().getPos().getZ());
+                    matrices.translate(Math.floor(client.gameRenderer.getCamera().getPos().getX()), Math.floor(client.gameRenderer.getCamera().getPos().getY()), Math.floor(client.gameRenderer.getCamera().getPos().getZ()));
+                    matrices.translate(x, 0, z);
+
+                    matrices.translate(0.5D, 0, 0.5D);
+                    matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(wind.y));
+                    matrices.translate(-0.5D, 0, -0.5D);
+
+                    Matrix4f matrix4f = matrices.peek().getPositionMatrix();
+                    bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+
+                    float thickness = 8.0F;
+
+                    float col = wind.x;
+                    bufferBuilder.vertex(matrix4f, (8.0F + (thickness / 2.0F)) / 16.0F, -1.0F, 0.0F / 16.0F).color(col, col, col, 0.3F).next();
+                    bufferBuilder.vertex(matrix4f, (8.0F - (thickness / 2.0F)) / 16.0F, -1.0F, 0.0F / 16.0F).color(col, col, col, 0.3F).next();
+                    bufferBuilder.vertex(matrix4f, 8.0F / 16.0F, -1.0F, 1.0f).color(col, col, col, 0.3F).next();
+                    bufferBuilder.vertex(matrix4f, 8.0F / 16.0F, -1.0F, 1.0f).color(col, col, col, 0.3F).next();
+                    tessellator.draw();
+
+                    matrices.pop();
+
+                    RenderSystem.polygonOffset(0.0F, 0.0F);
+                    RenderSystem.disablePolygonOffset();
+                    RenderSystem.depthMask(true);
+                    RenderSystem.disableDepthTest();
+                    RenderSystem.disableBlend();
+                }
+            }
+        }
+    }
+
 
     /**
      * @author Andrew6rant (Andrew Grant)
