@@ -1,7 +1,7 @@
 {
   "variants": {
     "": {
-      "model": "variable-weather:block/weather_vane_angled"
+      "model": "variable-weather:block/weather_vane"
     }
   }
 }

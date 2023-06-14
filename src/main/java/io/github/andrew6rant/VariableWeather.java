@@ -7,6 +7,8 @@ import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityT
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
@@ -24,5 +26,7 @@ public class VariableWeather implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		Registry.register(Registries.BLOCK, new Identifier("variable-weather", "weather_vane"), WEATHER_VANE);
+		Registry.register(Registries.ITEM, new Identifier("variable-weather", "weather_vane"), new BlockItem(WEATHER_VANE, new Item.Settings()));
+
 	}
 }

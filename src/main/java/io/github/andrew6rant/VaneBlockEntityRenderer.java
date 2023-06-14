@@ -10,10 +10,8 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec2f;
-import org.joml.Matrix4f;
 
 import static io.github.andrew6rant.weather.WeatherManager.getWindPolar;
-import static org.joml.Math.sin;
 
 public class VaneBlockEntityRenderer implements BlockEntityRenderer<VaneBlockEntity> {
     private final ModelPart platform;

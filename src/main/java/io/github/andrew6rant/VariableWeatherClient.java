@@ -7,11 +7,8 @@ import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
-import net.minecraft.client.render.entity.model.EntityModelLayer;
-import net.minecraft.util.Identifier;
 
 public class VariableWeatherClient implements ClientModInitializer {
-    public static final EntityModelLayer MODEL_CHIMES_LAYER = new EntityModelLayer(new Identifier("variable-weather", "weather_vane"), "vane");
     @Override
     public void onInitializeClient() {
         BlockRenderLayerMap.INSTANCE.putBlock(VariableWeather.WEATHER_VANE, RenderLayer.getCutout());
@@ -28,8 +25,4 @@ public class VariableWeatherClient implements ClientModInitializer {
     public static boolean renderWindVisualization() {
         return true;
     }
-
-    //static {
-    //    BlockEntityRendererFactories.register(VariableWeather.VANE_BLOCK_ENTITY, ctx -> new VaneBlockEntityRenderer(ctx));
-    //}
 }
